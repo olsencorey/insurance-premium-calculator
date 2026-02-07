@@ -1,0 +1,56 @@
+<div class="container">
+  <h1>{{ title }}</h1>
+
+  <form [formGroup]="premiumForm" (ngSubmit)="onSubmit()">
+    <div class="form-row">
+      <label>Age</label>
+      <input type="number" formControlName="age" />
+      <div class="error" *ngIf="premiumForm.get('age')?.invalid && premiumForm.get('age')?.touched">
+        Age must be between 18 and 80.
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Coverage Amount</label>
+      <input type="number" formControlName="coverageAmount" />
+      <div class="error" *ngIf="premiumForm.get('coverageAmount')?.invalid && premiumForm.get('coverageAmount')?.touched">
+        Coverage must be at least 10,000.
+      </div>
+    </div>
+
+    <div class="form-row checkbox-row">
+      <label>
+        <input type="checkbox" formControlName="isSmoker" />
+        Smoker
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>State</label>
+      <select formControlName="state">
+        <option value="PA">PA</option>
+        <option value="CA">CA</option>
+        <option value="NY">NY</option>
+        <option value="TX">TX</option>
+      </select>
+    </div>
+
+    <button type="submit" [disabled]="premiumForm.invalid">Calculate Premium</button>
+  </form>
+
+  <div class="error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="result" *ngIf="result">
+    <h2>Premium Result</h2>
+    <p><strong>Annual Premium:</strong> {{ result.annualPremium | currency }}</p>
+    <ul>
+      <li>Base Rate: {{ result.baseRate }}</li>
+      <li>Age Factor: {{ result.ageFactor }}</li>
+      <li>Smoker Surcharge: {{ result.smokerSurcharge }}</li>
+      <li>State Adjustment: {{ result.stateAdjustment }}</li>
+      <li>Notes: {{ result.ratingNotes }}</li>
+    </ul>
+  </div>
+</div>
