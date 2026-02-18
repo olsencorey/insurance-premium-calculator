@@ -1,56 +1,71 @@
-<div class="container">
-  <h1>{{ title }}</h1>
+<div class="app-container">
+  <div class="card">
+    <h1>Insurance Premium Calculator</h1>
 
-  <form [formGroup]="premiumForm" (ngSubmit)="onSubmit()">
-    <div class="form-row">
-      <label>Age</label>
-      <input type="number" formControlName="age" />
-      <div class="error" *ngIf="premiumForm.get('age')?.invalid && premiumForm.get('age')?.touched">
-        Age must be between 18 and 80.
-      </div>
-    </div>
-
-    <div class="form-row">
-      <label>Coverage Amount</label>
-      <input type="number" formControlName="coverageAmount" />
-      <div class="error" *ngIf="premiumForm.get('coverageAmount')?.invalid && premiumForm.get('coverageAmount')?.touched">
-        Coverage must be at least 10,000.
-      </div>
-    </div>
-
-    <div class="form-row checkbox-row">
+    <form [formGroup]="premiumForm" (ngSubmit)="calculatePremium()" class="form-grid">
       <label>
-        <input type="checkbox" formControlName="isSmoker" />
-        Smoker
+        Age
+        <input type="number" formControlName="age" name="age" />
       </label>
+
+      <label>
+        Coverage Amount
+        <input type="number" formControlName="coverageAmount" name="coverageAmount" />
+      </label>
+
+      <label>
+        Smoker
+        <select formControlName="smoker" name="smoker">
+          <option value="No">No</option>
+          <option value="Yes">Yes</option>
+        </select>
+      </label>
+
+      <label>
+        State
+        <select formControlName="state" name="state">
+          <option value="PA">PA</option>
+          <option value="NJ">NJ</option>
+          <option value="NY">NY</option>
+          <option value="DE">DE</option>
+        </select>
+      </label>
+
+      <button type="submit" [disabled]="loading">
+        {{ loading ? 'Calculating...' : 'Calculate Premium' }}
+      </button>
+    </form>
+
+    <div class="result" *ngIf="premiumResult as value">
+      <h2>Estimated Annual Premium</h2>
+      <div class="premium-amount">{{ value | currency : 'USD' : 'symbol' : '1.0-0' }}</div>
+
+      <h3>Premium Breakdown</h3>
+      <div class="breakdown" *ngIf="premiumDetails">
+        <div class="breakdown-item">
+          <span class="label">Base Rate:</span>
+          <span class="value">{{ premiumDetails.baseRate | percent : '1.2-2' }}</span>
+        </div>
+        <div class="breakdown-item">
+          <span class="label">Age Factor:</span>
+          <span class="value">{{ premiumDetails.ageFactor | number : '1.2-2' }}x</span>
+        </div>
+        <div class="breakdown-item">
+          <span class="label">Smoker Surcharge:</span>
+          <span class="value">{{ premiumDetails.smokerSurcharge | currency : 'USD' : 'symbol' : '1.2-2' }}</span>
+        </div>
+        <div class="breakdown-item">
+          <span class="label">State Adjustment:</span>
+          <span class="value">{{ premiumDetails.stateAdjustment | number : '1.2-2' }}x</span>
+        </div>
+        <div class="notes">
+          <strong>Notes:</strong> {{ premiumDetails.ratingNotes }}
+        </div>
+      </div>
     </div>
 
-    <div class="form-row">
-      <label>State</label>
-      <select formControlName="state">
-        <option value="PA">PA</option>
-        <option value="CA">CA</option>
-        <option value="NY">NY</option>
-        <option value="TX">TX</option>
-      </select>
+    <div class="error" *ngIf="errorMessage">
+      {{ errorMessage }}
     </div>
-
-    <button type="submit" [disabled]="premiumForm.invalid">Calculate Premium</button>
-  </form>
-
-  <div class="error" *ngIf="errorMessage">
-    {{ errorMessage }}
-  </div>
-
-  <div class="result" *ngIf="result">
-    <h2>Premium Result</h2>
-    <p><strong>Annual Premium:</strong> {{ result.annualPremium | currency }}</p>
-    <ul>
-      <li>Base Rate: {{ result.baseRate }}</li>
-      <li>Age Factor: {{ result.ageFactor }}</li>
-      <li>Smoker Surcharge: {{ result.smokerSurcharge }}</li>
-      <li>State Adjustment: {{ result.stateAdjustment }}</li>
-      <li>Notes: {{ result.ratingNotes }}</li>
-    </ul>
   </div>
 </div>

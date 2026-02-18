@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
 interface PremiumRequest {
   age: number;
@@ -22,48 +22,77 @@ interface PremiumResult {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './app.html',
-  styleUrl: './app.css',
+  styleUrls: ['./app.css'], // <-- plural, array
 })
 export class AppComponent {
-  title = 'Insurance Premium Calculator';
-  premiumForm: FormGroup;
-  result: PremiumResult | null = null;
-  errorMessage = '';
-
-  // IMPORTANT: update this to your actual API URL/port
-  apiUrl = 'https://localhost:5001/api/premium';
-
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
+  private cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  constructor() {
-    this.premiumForm = this.fb.group({
-      age: [35, [Validators.required, Validators.min(18), Validators.max(80)]],
-      coverageAmount: [250000, [Validators.required, Validators.min(10000)]],
-      isSmoker: [false],
-      state: ['PA', Validators.required],
-    });
-  }
+  // Point this to your API
+  apiUrl = 'http://localhost:5187/api/premium';
 
-  onSubmit() {
-    this.errorMessage = '';
-    this.result = null;
+  // Result + error state
+  loading = false;
+  premiumResult: number | null = null;
+  errorMessage: string | null = null;
+  premiumDetails: any = null;
+  
+  // Reactive form
+  premiumForm = this.fb.group({
+    age: [30, [Validators.required]],
+    coverageAmount: [250000, [Validators.required]],
+    smoker: ['No', [Validators.required]],
+    state: ['PA', [Validators.required]]
+  });
+
+  calculatePremium() {
+    console.log('calculatePremium clicked');
+    this.errorMessage = null;
+    this.premiumResult = null;
+    this.premiumDetails = null;
 
     if (this.premiumForm.invalid) {
-      this.errorMessage = 'Please fix validation errors before submitting.';
+      this.errorMessage = 'Please fill in all required fields.';
       return;
     }
 
-    const payload: PremiumRequest = this.premiumForm.value;
+    const formValue = this.premiumForm.value;
 
-    this.http.post<PremiumResult>(this.apiUrl, payload).subscribe({
-      next: (res) => (this.result = res),
-      error: (err) => {
-        console.error(err);
-        this.errorMessage = 'Error calculating premium. Please try again.';
+    const payload = {
+      age: Number(formValue.age),
+      coverageAmount: Number(formValue.coverageAmount),
+      smoker: formValue.smoker === 'Yes',
+      state: String(formValue.state)
+    };
+
+    console.log('Submitting payload', payload);
+    this.loading = true;
+
+    this.http.post<{
+      ageFactor: number;
+      annualPremium: number;
+      baseRate: number;
+      ratingNotes: string;
+      smokerSurcharge: number;
+      stateAdjustment: number;
+    }>(this.apiUrl, payload).subscribe({
+      next: result => {
+        console.log('API result', result);
+        this.premiumDetails = result;
+        this.premiumResult = result.annualPremium;
+        this.loading = false;
+        console.log('Loading set to false, premiumResult:', this.premiumResult);
+        this.cdr.detectChanges();
       },
+      error: err => {
+        console.error('API error', err);
+        this.errorMessage = 'An error occurred while calculating the premium.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 }
